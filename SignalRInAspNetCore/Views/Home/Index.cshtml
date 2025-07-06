@@ -1,0 +1,67 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+
+<h1>Our Chat</h1>
+<div id="messageList"></div>
+
+<input type="text" id="groupName" placeholder="Group Name" />
+<button id="joinGroup" onclick="joinGroup()">Join</button>
+
+
+<input type="text" id="userInput" placeholder="Your Name Please?"/>
+
+<textarea id="messageinput" placeholder="Your Message Here.." > </textarea>
+<button id="sendMessage">Send</button>
+
+@section Scripts{
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chathub")// url for the signalR hub
+        .build();
+
+        connection.on("ReceiveMessage",
+        (user,message)=>{
+            const msg = `${user}:${message}`;
+
+            const div=document.createElement("div")
+            div.textContent=msg;
+            document.getElementById("messageList").appendChild(div);
+        });
+
+        document.getElementById("sendMessage").addEventListener("click",()=>{
+            const groupName=document.getElementById("groupName").value;
+
+            const user=document.getElementById("userInput").value;
+            const message=document.getElementById("messageInput").value;
+
+            //sending message to the server
+            connection.invoke("SendMessage",user,message,groupName)
+            .catch(err=>console.error(err));
+
+        });
+        connection.start()
+        .catch(err=>console.error(err));
+
+        function joinGroup(){
+            var groupName=document.getElementById("groupName").value;
+            if(groupName){
+                connection.invoke("JoinGroup", groupName)
+                .then(()=>{
+                    alert("Group Joined")
+
+                })
+                .catch(err=>console.error(err));
+                ;
+            }
+
+        }
+    </script>
+}
