@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddSignalR();
-
+//builder.WebHost.UseUrls("http://localhost:8080");
 
 var app = builder.Build();
 
@@ -23,7 +23,7 @@ if (!app.Environment.IsDevelopment())
 
 
 app.MapHub<ChatHub>("/chathub");
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
