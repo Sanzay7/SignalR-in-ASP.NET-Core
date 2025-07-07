@@ -1,31 +1,34 @@
-﻿using System.Security;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
 namespace SignalRInAspNetCore
 {
-      public class ChatHub : Hub
+    public class ChatHub : Hub
+    {
+        public async Task SendMessage(string user, string message, string groupName)
         {
-            public async Task SendMessage(string user, string message, string groupName)
-            {
-                await Clients.Group(groupName).SendAsync("ReceivedMessage", user, message);
-            }
-            public async Task BroadCastMessage(string user, string message)
-            {
-                await Clients.All.SendAsync(user, message);
+            // Broadcast to only the specified group
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", user, message);
         }
+
+        public async Task BroadCastMessage(string user, string message)
+        {
+            await Clients.All.SendAsync("ReceiveMessage", user, message);
+        }
+
         public async Task JoinGroup(string groupName)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", groupName,"");
+
+            // Optional: notify others in the group someone joined
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"A user joined the group {groupName}");
         }
+
         public async Task LeaveGroup(string groupName)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} Left {groupName}","system");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"A user left the group {groupName}");
         }
     }
-
-
-
 }

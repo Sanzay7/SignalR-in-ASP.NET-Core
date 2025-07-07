@@ -1,67 +1,93 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Chat Page";
 }
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+<div class="container mt-4">
+    <h1 class="display-5 mb-3">SignalR Chat</h1>
+
+    <div id="messageList" class="mb-3 border rounded p-2" style="min-height: 150px;"></div>
+
+    <div class="mb-2">
+        <input type="text" id="groupName" placeholder="Group Name" class="form-control mb-2" />
+        <button id="joinGroup" class="btn btn-secondary mb-3 me-2">Join Group</button>
+        <button id="leaveGroup" class="btn btn-warning mb-3">Leave Group</button>
+
+        <input type="text" id="userInput" placeholder="Your Name" class="form-control mb-2" />
+        <textarea id="messageInput" placeholder="Your Message" class="form-control mb-2"></textarea>
+        <button id="sendMessage" class="btn btn-primary">Send</button>
+    </div>
+
 </div>
 
-
-
-<h1>Our Chat</h1>
-<div id="messageList"></div>
-
-<input type="text" id="groupName" placeholder="Group Name" />
-<button id="joinGroup" onclick="joinGroup()">Join</button>
-
-
-<input type="text" id="userInput" placeholder="Your Name Please?"/>
-
-<textarea id="messageinput" placeholder="Your Message Here.." > </textarea>
-<button id="sendMessage">Send</button>
-
-@section Scripts{
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/chathub")// url for the signalR hub
-        .build();
+                document.addEventListener("DOMContentLoaded", function () {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .build();
 
-        connection.on("ReceiveMessage",
-        (user,message)=>{
-            const msg = `${user}:${message}`;
+            connection.on("ReceiveMessage", function (user, message) {
+                const msg = `${user}: ${message}`;
+                const div = document.createElement("div");
+                div.textContent = msg;
+                document.getElementById("messageList").appendChild(div);
+                const msgList = document.getElementById("messageList");
+                msgList.scrollTop = msgList.scrollHeight;
+            });
 
-            const div=document.createElement("div")
-            div.textContent=msg;
-            document.getElementById("messageList").appendChild(div);
+            document.getElementById("joinGroup").addEventListener("click", function () {
+                const groupName = document.getElementById("groupName").value.trim();
+                if (groupName) {
+                    connection.invoke("JoinGroup", groupName)
+                        .then(() => alert(`You joined group: ${groupName}`))
+                        .catch(err => console.error(err));
+                } else {
+                    alert("Please enter a group name to join.");
+                }
+            });
+
+            document.getElementById("leaveGroup").addEventListener("click", function () {
+                const groupName = document.getElementById("groupName").value.trim();
+                if (!groupName) {
+                    alert("Please enter the group name you want to leave.");
+                    return;
+                }
+                connection.invoke("LeaveGroup", groupName)
+                    .then(() => alert(`You left the group: ${groupName}`))
+                    .catch(err => console.error(err));
+            });
+
+            document.getElementById("sendMessage").addEventListener("click", function () {
+                const user = document.getElementById("userInput").value.trim();
+                const message = document.getElementById("messageInput").value.trim();
+                const groupName = document.getElementById("groupName").value.trim();
+
+                if (!groupName) {
+                    alert("Please join a group first.");
+                    return;
+                }
+                if (!user) {
+                    alert("Please enter your name.");
+                    return;
+                }
+                if (!message) {
+                    alert("Please enter a message.");
+                    return;
+                }
+
+                connection.invoke("SendMessage", user, message, groupName)
+                    .then(() => {
+                        document.getElementById("messageInput").value = "";
+                    })
+                    .catch(err => console.error(err));
+            });
+
+            connection.start()
+                .then(() => console.log("SignalR connected"))
+                .catch(err => console.error("SignalR connection error: ", err));
         });
 
-        document.getElementById("sendMessage").addEventListener("click",()=>{
-            const groupName=document.getElementById("groupName").value;
-
-            const user=document.getElementById("userInput").value;
-            const message=document.getElementById("messageInput").value;
-
-            //sending message to the server
-            connection.invoke("SendMessage",user,message,groupName)
-            .catch(err=>console.error(err));
-
-        });
-        connection.start()
-        .catch(err=>console.error(err));
-
-        function joinGroup(){
-            var groupName=document.getElementById("groupName").value;
-            if(groupName){
-                connection.invoke("JoinGroup", groupName)
-                .then(()=>{
-                    alert("Group Joined")
-
-                })
-                .catch(err=>console.error(err));
-                ;
-            }
-
-        }
     </script>
 }
+
